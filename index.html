@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <title>FakeDex Entry Generator</title>
+    <style>
+        body, input, textarea, select {
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>FakeDex Entry Generator</h1>
+    <p>Right-click on the image and Save As when finished.</p>
+    <script>
+
+        function bindText(labelText, initialValue) {
+            const state = { value: initialValue }
+            const row = document.createElement('div')
+            const label = document.createElement('label')
+            label.textContent = labelText + ': '
+            const input = document.createElement('input')
+            input.type = 'text'
+            input.value = initialValue
+            input.addEventListener('input', () => {
+                state.value = input.value
+                refresh()
+            })
+            label.appendChild(input)
+            row.appendChild(label)
+            document.body.appendChild(row)
+            return state
+        }
+
+        function bindMultiText(labelText, initialValue) {
+            const state = { value: initialValue }
+            const row = document.createElement('div')
+            const label = document.createElement('label')
+            label.textContent = labelText + ': '
+            const textarea = document.createElement('textarea')
+            textarea.rows = 3
+            textarea.cols = 40
+            textarea.value = initialValue
+            textarea.addEventListener('input', () => {
+                state.value = textarea.value
+                refresh()
+            })
+            label.appendChild(textarea)
+            row.appendChild(label)
+            document.body.appendChild(row)
+            return state
+        }
+
+        function bindSelect(labelText, options, initialValue) {
+            const state = { value: initialValue }
+            const row = document.createElement('div')
+            const label = document.createElement('label')
+            label.textContent = labelText + ': '
+            const select = document.createElement('select')
+            for (const o of options) {
+                const option = document.createElement('option')
+                option.value = o
+                option.textContent = o
+                option.selected = o === initialValue
+                select.appendChild(option)
+            }
+            select.addEventListener('change', () => {
+                state.value = options[select.selectedIndex]
+                refresh()
+            })
+            label.appendChild(select)
+            row.appendChild(label)
+            document.body.appendChild(row)
+            return state
+        }
+
+        function bindMultiSelect(labelText, options, initialValue) {
+            const state = { value: initialValue }
+            const row = document.createElement('div')
+            const label = document.createElement('label')
+            label.textContent = labelText + ': '
+            const select = document.createElement('select')
+            select.multiple = true
+            for (const o of options) {
+                const option = document.createElement('option')
+                option.value = o
+                option.textContent = o
+                option.selected = initialValue.includes(o)
+                select.appendChild(option)
+            }
+            select.addEventListener('change', () => {
+                state.value = [...select.selectedOptions].map(o => o.value)
+                refresh()
+            })
+            label.appendChild(select)
+            row.appendChild(label)
+            document.body.appendChild(row)
+            return state
+        }
+
+        function bindImage(labelText) {
+            const state = { value: new Image() }
+            state.value.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='
+            const row = document.createElement('div')
+            const label = document.createElement('label')
+            label.textContent = labelText + ': '
+            const input = document.createElement('input')
+            input.type = 'file'
+            input.addEventListener('change', () => {
+                state.value.onload = () => {
+                    URL.revokeObjectURL(state.value.src)
+                    refresh()
+                }
+                state.value.src = URL.createObjectURL(input.files[0])
+                refresh()
+            })
+            label.appendChild(input)
+            row.appendChild(label)
+            document.body.appendChild(row)
+            return state
+        }
+
+        const TYPES = [
+            '',
+            'Normal',
+            'Fire',
+            'Fighting',
+            'Water',
+            'Flying',
+            'Grass',
+            'Poison',
+            'Electric',
+            'Ground',
+            'Psychic',
+            'Rock',
+            'Ice',
+            'Bug',
+            'Dragon',
+            'Ghost',
+            'Dark',
+            'Steel',
+            'Fairy',
+        ]
+
+        const TYPE_COLORS = {
+            '': '#777',
+            'Normal': '#AA7',
+            'Fire': '#F83',
+            'Fighting': '#C32',
+            'Water': '#69F',
+            'Flying': '#A9F',
+            'Grass': '#7C5',
+            'Poison': '#A4A',
+            'Electric': '#FD3',
+            'Ground': '#EC6',
+            'Psychic': '#F58',
+            'Rock': '#BA3',
+            'Ice': '#9DD',
+            'Bug': '#AB2',
+            'Dragon': '#73F',
+            'Ghost': '#759',
+            'Dark': '#754',
+            'Steel': '#BBD',
+            'Fairy': '#E9A',
+        }
+
+        const GENDERS = [
+            'Genderless',
+            'Male',
+            'Female',
+        ]
+
+        const number = bindText('Number', '#001')
+        const name = bindText('Name', 'Pikachu')
+        const category = bindText('Category', 'Mouse Pokemon')
+        const type1 = bindSelect('Type 1', TYPES, 'Electric')
+        const type2 = bindSelect('Type 2', TYPES, '')
+        const gender = bindSelect('Gender', GENDERS, 'Male')
+        const height = bindText('Height', '0.4 m')
+        const weight = bindText('Weight', '6.0 kg')
+        const image = bindImage('Image')
+        const entry = bindMultiText('Entry', 'Possesses cheek sacs in which it stores electricity.\nThis clever forest-dweller roasts tough berries\nwith an electric shock before consuming them.')
+
+        const canvas = document.createElement('canvas')
+        canvas.width = 400
+        canvas.height = 300
+        document.body.appendChild(canvas)
+        const ctx = canvas.getContext('2d')
+
+        const darkGray = '#333'
+        const gray = '#666'
+        const lightGray = '#CCC'
+        const darkRed = '#822'
+        const red = '#F44'
+        const black = '#111'
+        const white = '#FFF'
+        const font = new FontFace('Roboto', 'url(https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxK.woff2)')
+        font.load().then(() => refresh())
+        
+        const grayGradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 150, canvas.width / 2, canvas.height / 2, canvas.width)
+        grayGradient.addColorStop(0, darkGray)
+        grayGradient.addColorStop(1, gray)
+
+        function roundRect(x, y, w, h, r) {
+            ctx.beginPath()
+            ctx.moveTo(x + r, y)
+            ctx.lineTo(x + w - r, y)
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+            ctx.lineTo(x + w, y + h - r)
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+            ctx.lineTo(x + r, y + h)
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+            ctx.lineTo(x, y + r)
+            ctx.quadraticCurveTo(x, y, x + r, y)
+            ctx.closePath()
+        }
+
+        function refresh() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+            ctx.fillStyle = grayGradient
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+            ctx.drawImage(image.value, 0, 0, (canvas.height - 100) * (image.value.width / image.value.height), canvas.height - 100)
+            
+            ctx.fillStyle = darkRed
+            ctx.fillRect(canvas.width - 150, 0, canvas.width - 150, canvas.height - 100)
+
+            ctx.fillStyle = white
+            ctx.font = `bold 14px ${font.family}`
+            ctx.textBaseline = 'middle'
+            ctx.textAlign = 'right'
+            ctx.fillText('Type', canvas.width - 80, 75)
+            ctx.fillText('Height', canvas.width - 80, 100 + (type2.value ? 25 : 0))
+            ctx.fillText('Weight', canvas.width - 80, 125 + (type2.value ? 25 : 0))
+
+            ctx.fillStyle = white
+            ctx.font = `14px ${font.family}`
+            ctx.textBaseline = 'middle'
+            ctx.textAlign = 'center'
+            ctx.fillText(category.value, canvas.width - 75, 50)
+            ctx.textAlign = 'left'
+            ctx.fillText(height.value, canvas.width - 70, 100 + (type2.value ? 25 : 0))
+            ctx.fillText(weight.value, canvas.width - 70, 125 + (type2.value ? 25 : 0))
+            
+            ctx.font = `12px ${font.family}`
+            ctx.textBaseline = 'middle'
+            ctx.textAlign = 'center'
+            if (type1.value) {
+                ctx.fillStyle = TYPE_COLORS[type1.value]
+                const { width: w } = ctx.measureText(type1.value)
+                roundRect(canvas.width - 70, 75 - 10, w + 10, 20, 3)
+                ctx.fill()
+                ctx.fillStyle = white
+                ctx.fillText(type1.value, canvas.width - 70 + w / 2 + 5, 75 + 2)
+            }
+            if (type2.value) {
+                ctx.fillStyle = TYPE_COLORS[type2.value]
+                const { width: w } = ctx.measureText(type2.value)
+                roundRect(canvas.width - 70, 100 - 10, w + 10, 20, 3)
+                ctx.fill()
+                ctx.fillStyle = white
+                ctx.fillText(type2.value, canvas.width - 70 + w / 2 + 5, 100 + 2)
+            }
+
+            ctx.fillStyle = red
+            ctx.beginPath()
+            ctx.moveTo(0, 45)
+            ctx.lineTo(canvas.width, 30)
+            ctx.lineTo(canvas.width, 0)
+            ctx.lineTo(0, 0)
+            ctx.closePath()
+            ctx.fill()
+
+            ctx.fillStyle = white
+            ctx.font = `20px ${font.family}`
+            ctx.textBaseline = 'top'
+            ctx.textAlign = 'left'
+            ctx.fillText(number.value + ' ' + name.value + ' ' + (gender.value === 'Male' ? '♂' : gender.value === 'Female' ? '♀' : ''), 10, 10)
+
+            ctx.fillStyle = lightGray
+            ctx.fillRect(0, canvas.height - 100, canvas.width, 100)
+
+            ctx.fillStyle = red
+            ctx.beginPath()
+            ctx.moveTo(0, canvas.height - 15)
+            ctx.lineTo(canvas.width, canvas.height - 30)
+            ctx.lineTo(canvas.width, canvas.height)
+            ctx.lineTo(0, canvas.height)
+            ctx.closePath()
+            ctx.fill()
+
+            ctx.fillStyle = black
+            ctx.font = `bold 16px ${font.family}`
+            ctx.textBaseline = 'top'
+            ctx.textAlign = 'left'
+            let i = 0
+            for (const line of entry.value.split('\n')) {
+                ctx.fillText(line, 10, canvas.height - 100 + 10 + 20 * i++)
+            }
+        }
+
+        refresh()
+    </script>
+</body>
+
+</html>
